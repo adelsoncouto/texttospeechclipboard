@@ -13,13 +13,12 @@ namespace Fala
         private static int rate = 5;
         private static string velocidade = "-10%";
         private static SpeechSynthesizer fala;
+        private static bool iniciaFala = true;
 
         [STAThread]
         public static void Main(string[] args)
         {
 
-
-            // para não começar com o que já está na area de transferência
             ultimoTexto = Clipboard.GetText();
 
             using (fala = new SpeechSynthesizer())
@@ -40,14 +39,12 @@ namespace Fala
                 fala.SelectVoiceByHints(VoiceGender.Male, VoiceAge.Adult, 0, new System.Globalization.CultureInfo("pt-BR"));
 
                 Console.CancelKeyPress += new ConsoleCancelEventHandler(OnExit);
-                Console.WriteLine("Monitorando a área de transferência... Pressione Ctrl+C para sair. Pressione Ctrl+P para pausar/continuar.");
+                Console.WriteLine("Monitorando a área de transferência... Pressione Ctrl+C para sair. Ctrl+P para pausar/continuar e CTRL+R para cancelar todas as falas.");
 
-                // Iniciar thread para monitorar o clipboard
                 Thread clipboardThread = new Thread(MonitorClipboard);
                 clipboardThread.SetApartmentState(ApartmentState.STA); // Clipboard requires STA thread
                 clipboardThread.Start();
 
-                // Iniciar thread para monitorar o teclado
                 Thread keyPressThread = new Thread(MonitorKeyPress);
                 keyPressThread.Start();
 
@@ -71,7 +68,6 @@ namespace Fala
                 {
                     string? texto = null;
 
-                    // Acessar a área de transferência dentro de um try/catch
                     if (Clipboard.ContainsText())
                     {
                         texto = Clipboard.GetText();
@@ -88,6 +84,10 @@ namespace Fala
                     }
 
                     ultimoTexto = texto;
+                    if(!iniciaFala) {
+                        iniciaFala = true;
+                        continue;
+                    }
                     Falar(texto);
                 }
                 catch (Exception ex)
@@ -116,13 +116,20 @@ namespace Fala
                 if (Console.KeyAvailable)
                 {
                     var key = Console.ReadKey(true);
+
+                    if (key.Modifiers == ConsoleModifiers.Control && key.Key == ConsoleKey.R)
+                    {
+                        Console.WriteLine("Reiniciando a fala...");
+                        Reiniciar();
+                    }
+
                     if (key.Modifiers == ConsoleModifiers.Control && key.Key == ConsoleKey.P)
                     {
                         TogglePause();
                     }
                 }
 
-                Thread.Sleep(100); // Pequena pausa para não sobrecarregar a CPU
+                Thread.Sleep(100);
             }
         }
 
@@ -148,6 +155,15 @@ namespace Fala
             running = false;
             fala.Dispose();
             Console.WriteLine("Encerrando o programa...");
+        }
+
+        private static void Reiniciar()
+        {
+
+            fala.SpeakAsyncCancelAll();
+            iniciaFala = false;
+            ultimoTexto = "";
+            Console.WriteLine("Fala reiniciada. Aguardando novo texto da área de transferência.");
         }
     }
 }
