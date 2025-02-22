@@ -104,8 +104,7 @@ namespace Fala
             string ssmlText = $@"
                 <speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='pt-BR'>
                     <prosody pitch='x-low'>
-                        i.<break time='500ms'/> 
-                        {System.Security.SecurityElement.Escape(texto)}
+                        i.<break time='500ms'/> {System.Security.SecurityElement.Escape(texto)}
                     </prosody>
                 </speak>";
 
