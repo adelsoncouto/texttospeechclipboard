@@ -8,7 +8,15 @@
     <PublishSingleFile>true</PublishSingleFile>
     <UseWPF>false</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
-    <EnableComHosting>true</EnableComHosting> <!-- Habilita o suporte a COM -->
+    <EnableComHosting>true</EnableComHosting>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+
+
   </PropertyGroup>
 
   <ItemGroup>

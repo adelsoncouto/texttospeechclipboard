@@ -11,7 +11,6 @@ namespace Fala
         private static bool running = true;
         private static bool paused = false;
         private static int rate = 5;
-        private static string velocidade = "-10%";
         private static SpeechSynthesizer fala;
         private static bool iniciaFala = true;
 
@@ -29,11 +28,7 @@ namespace Fala
                     rate = int.Parse(args[0]);
                 }
 
-                if (args.Length > 1)
-                {
-                    velocidade = $@"{int.Parse(args[1])}%";
-                }
-
+               
                 fala.Rate = rate;
 
                 fala.SelectVoiceByHints(VoiceGender.Male, VoiceAge.Adult, 0, new System.Globalization.CultureInfo("pt-BR"));
@@ -101,7 +96,7 @@ namespace Fala
         {
             string ssmlText = $@"
                 <speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='pt-BR'>
-                    <prosody pitch='{velocidade}'>
+                    <prosody pitch='x-low'>
                         {System.Security.SecurityElement.Escape(texto)}
                     </prosody>
                 </speak>";
