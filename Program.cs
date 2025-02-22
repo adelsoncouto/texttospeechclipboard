@@ -12,40 +12,34 @@ namespace Fala
         private static bool paused = false;
         private static int rate = 5;
         private static SpeechSynthesizer fala;
-        private static bool iniciaFala = true;
 
         [STAThread]
         public static void Main(string[] args)
         {
-
             ultimoTexto = Clipboard.GetText();
 
-            using (fala = new SpeechSynthesizer())
+            fala = new SpeechSynthesizer(); // Inicializa fora do using para reutilizar
+            fala.Rate = rate;
+
+            if (args.Length > 0)
             {
-
-                if (args.Length > 0)
-                {
-                    rate = int.Parse(args[0]);
-                }
-
-               
-                fala.Rate = rate;
-
-                fala.SelectVoiceByHints(VoiceGender.Male, VoiceAge.Adult, 0, new System.Globalization.CultureInfo("pt-BR"));
-
-                Console.CancelKeyPress += new ConsoleCancelEventHandler(OnExit);
-                Console.WriteLine("Monitorando a área de transferência... Pressione Ctrl+C para sair. Ctrl+P para pausar/continuar e CTRL+R para cancelar todas as falas.");
-
-                Thread clipboardThread = new Thread(MonitorClipboard);
-                clipboardThread.SetApartmentState(ApartmentState.STA); // Clipboard requires STA thread
-                clipboardThread.Start();
-
-                Thread keyPressThread = new Thread(MonitorKeyPress);
-                keyPressThread.Start();
-
-                clipboardThread.Join();
-                keyPressThread.Join();
+                rate = int.Parse(args[0]);
             }
+
+            fala.SelectVoiceByHints(VoiceGender.Male, VoiceAge.Adult, 0, new System.Globalization.CultureInfo("pt-BR"));
+
+            Console.CancelKeyPress += new ConsoleCancelEventHandler(OnExit);
+            Console.WriteLine("Monitorando a área de transferência... Pressione Ctrl+C para sair. Ctrl+P para pausar/continuar e CTRL+R para cancelar todas as falas.");
+
+            Thread clipboardThread = new Thread(MonitorClipboard);
+            clipboardThread.SetApartmentState(ApartmentState.STA); // Clipboard requires STA thread
+            clipboardThread.Start();
+
+            Thread keyPressThread = new Thread(MonitorKeyPress);
+            keyPressThread.Start();
+
+            clipboardThread.Join();
+            keyPressThread.Join();
         }
 
         private static void MonitorClipboard()
@@ -73,17 +67,16 @@ namespace Fala
                         continue;
                     }
 
-                    if (texto == ultimoTexto)
+                    if (texto != ultimoTexto)
                     {
-                        continue;
-                    }
+                        while (fala.State == SynthesizerState.Speaking)
+                        {
+                            Thread.Sleep(100);
+                        }
 
-                    ultimoTexto = texto;
-                    if(!iniciaFala) {
-                        iniciaFala = true;
-                        continue;
+                        ultimoTexto = texto;
+                        Falar(texto);
                     }
-                    Falar(texto);
                 }
                 catch (Exception ex)
                 {
@@ -94,14 +87,30 @@ namespace Fala
 
         private static void Falar(string texto)
         {
+            // Reinicializa o SpeechSynthesizer
+            fala.Dispose();
+            fala = new SpeechSynthesizer();
+            fala.Rate = rate;
+            fala.SelectVoiceByHints(VoiceGender.Male, VoiceAge.Adult, 0, new System.Globalization.CultureInfo("pt-BR"));
+
+            // Verifica se o sintetizador está pronto
+            while (fala.State != SynthesizerState.Ready)
+            {
+                Console.WriteLine($"Estado atual: {fala.State}. Aguardando ficar Ready...");
+                Thread.Sleep(50);
+            }
+
+            // Adiciona um ponto com pausa no início e pausas nos pontos do texto
             string ssmlText = $@"
                 <speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='pt-BR'>
                     <prosody pitch='x-low'>
+                        i.<break time='500ms'/> 
                         {System.Security.SecurityElement.Escape(texto)}
                     </prosody>
                 </speak>";
 
-            fala.SpeakSsmlAsync(ssmlText);
+            Thread.Sleep(100);
+            fala.SpeakSsml(ssmlText);
         }
 
         private static void MonitorKeyPress()
@@ -154,9 +163,7 @@ namespace Fala
 
         private static void Reiniciar()
         {
-
             fala.SpeakAsyncCancelAll();
-            iniciaFala = false;
             ultimoTexto = "";
             Console.WriteLine("Fala reiniciada. Aguardando novo texto da área de transferência.");
         }
